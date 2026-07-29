@@ -7,6 +7,9 @@ from qrcode.image.styles.colormasks import RadialGradiantColorMask, SolidFillCol
 from PIL import Image
 import io
 import base64
+import sqlite3
+import string
+import random
 from typing import Optional
 
 app = FastAPI(title="QR Code Generator API")
@@ -19,12 +22,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def init_db():
+    conn = sqlite3.connect('qr.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS links
+                 (short_id TEXT PRIMARY KEY, url TEXT)''')
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def generate_short_id(length=6):
+    return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+
 class QRRequest(BaseModel):
     url: str
     fill_color: str = "#000000"
     bg_color: str = "#FFFFFF"
     use_gradient: bool = False
     logo_base64: Optional[str] = None
+    is_dynamic: bool = False
 
 @app.get("/")
 def read_root():
@@ -35,13 +52,25 @@ def generate_qr(request: QRRequest):
     if not request.url:
         raise HTTPException(status_code=400, detail="URL is required")
         
+    qr_url = request.url
+    
+    if request.is_dynamic:
+        short_id = generate_short_id()
+        conn = sqlite3.connect('qr.db')
+        c = conn.cursor()
+        c.execute("INSERT INTO links (short_id, url) VALUES (?, ?)", (short_id, request.url))
+        conn.commit()
+        conn.close()
+        # Assume the backend is hosted here
+        qr_url = f"http://localhost:8000/r/{short_id}"
+        
     qr = qrcode.QRCode(
-        version=4, # Higher version to allow room for logo
+        version=4,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
         box_size=10,
         border=4
     )
-    qr.add_data(request.url)
+    qr.add_data(qr_url)
     qr.make(fit=True)
     
     def hex_to_rgb(h):
@@ -68,16 +97,12 @@ def generate_qr(request: QRRequest):
             logo_data = base64.b64decode(request.logo_base64.split(",")[1] if "," in request.logo_base64 else request.logo_base64)
             logo = Image.open(io.BytesIO(logo_data)).convert("RGBA")
             
-            # Calculate logo size (e.g., 20% of QR code width)
             basewidth = int(float(img.size[0]) * 0.2)
             wpercent = (basewidth / float(logo.size[0]))
             hsize = int((float(logo.size[1]) * float(wpercent)))
             logo = logo.resize((basewidth, hsize), Image.Resampling.LANCZOS)
             
-            # Calculate position
             pos = ((img.size[0] - logo.size[0]) // 2, (img.size[1] - logo.size[1]) // 2)
-            
-            # Paste logo
             img.paste(logo, pos, mask=logo)
         except Exception as e:
             print(f"Failed to add logo: {e}")
