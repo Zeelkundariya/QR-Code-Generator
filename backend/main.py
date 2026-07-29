@@ -71,8 +71,8 @@ def redirect_to_url(short_id: str):
 def get_links():
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
-    c.execute("SELECT short_id, url FROM links")
-    results = [{"short_id": row[0], "url": row[1]} for row in c.fetchall()]
+    c.execute("SELECT short_id, url, scans FROM links")
+    results = [{"short_id": row[0], "url": row[1], "scans": row[2] if len(row)>2 else 0} for row in c.fetchall()]
     conn.close()
     return {"links": results}
 

@@ -74,6 +74,11 @@ function Dashboard() {
                   </div>
                 )}
                 
+                <div style={{ flex: 1, textAlign: 'center', background: 'rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '4px' }}>
+                  <strong>Scans:</strong><br/>
+                  <span style={{ fontSize: '1.2rem', color: 'var(--primary)' }}>{link.scans || 0}</span>
+                </div>
+
                 {editingId !== link.short_id && (
                   <button onClick={() => handleEdit(link)} style={{ padding: '0.5rem 1rem' }}>Edit</button>
                 )}
