@@ -19,6 +19,8 @@ import csv
 import zipfile
 import json
 import urllib.request
+from datetime import datetime
+from qrcode.image.styles.moduledrawers import RoundedModuleDrawer, CircleModuleDrawer, SquareModuleDrawer, GappedSquareModuleDrawer
 
 app = FastAPI(title="QR Code Generator API")
 
@@ -105,6 +107,9 @@ class QRRequest(BaseModel):
     is_dynamic: bool = False
     password: Optional[str] = None
     format: str = "png"
+    scan_limit: Optional[int] = None
+    expires_at: Optional[str] = None
+    shape: str = "square"
 
 @app.get("/")
 def read_root():
@@ -116,10 +121,26 @@ from fastapi.responses import RedirectResponse
 def redirect_to_url(short_id: str, request: Request, background_tasks: BackgroundTasks):
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
-    c.execute("SELECT url, password FROM links WHERE short_id = ?", (short_id,))
+    c.execute("SELECT url, password, scans, scan_limit, expires_at FROM links WHERE short_id = ?", (short_id,))
     result = c.fetchone()
     if result:
-        url, password = result
+        url, password, scans, scan_limit, expires_at = result
+        
+        # Check Expirations and Limits
+        if scan_limit and scans >= scan_limit:
+            conn.close()
+            return HTMLResponse(status_code=403, content="<h2>This link has reached its maximum scan limit and is no longer available.</h2>")
+            
+        if expires_at:
+            try:
+                # Handle simple ISO format checking
+                exp_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                if datetime.now(exp_dt.tzinfo) > exp_dt:
+                    conn.close()
+                    return HTMLResponse(status_code=403, content="<h2>This promotional link has expired.</h2>")
+            except ValueError:
+                pass
+                
         if password:
             conn.close()
             return HTMLResponse(content=f"""
@@ -180,10 +201,24 @@ def redirect_to_url(short_id: str, request: Request, background_tasks: Backgroun
 def unlock_url(short_id: str, request: Request, background_tasks: BackgroundTasks, password: str = Form(...)):
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
-    c.execute("SELECT url, password FROM links WHERE short_id = ?", (short_id,))
+    c.execute("SELECT url, password, scans, scan_limit, expires_at FROM links WHERE short_id = ?", (short_id,))
     result = c.fetchone()
     if result:
-        url, saved_password = result
+        url, saved_password, scans, scan_limit, expires_at = result
+        
+        if scan_limit and scans >= scan_limit:
+            conn.close()
+            return HTMLResponse(status_code=403, content="<h2>This link has reached its maximum scan limit and is no longer available.</h2>")
+            
+        if expires_at:
+            try:
+                exp_dt = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+                if datetime.now(exp_dt.tzinfo) > exp_dt:
+                    conn.close()
+                    return HTMLResponse(status_code=403, content="<h2>This promotional link has expired.</h2>")
+            except ValueError:
+                pass
+
         if password == saved_password:
             c.execute("UPDATE links SET scans = scans + 1 WHERE short_id = ?", (short_id,))
             conn.commit()
@@ -257,7 +292,8 @@ def generate_qr(request: QRRequest):
         short_id = generate_short_id()
         conn = sqlite3.connect('qr.db')
         c = conn.cursor()
-        c.execute("INSERT INTO links (short_id, url, password) VALUES (?, ?, ?)", (short_id, request.url, request.password))
+        c.execute("INSERT INTO links (short_id, url, password, scan_limit, expires_at) VALUES (?, ?, ?, ?, ?)", 
+                  (short_id, request.url, request.password, request.scan_limit, request.expires_at))
         conn.commit()
         conn.close()
         # Assume the backend is hosted here
@@ -292,9 +328,18 @@ def generate_qr(request: QRRequest):
     else:
         color_mask = SolidFillColorMask(back_color=bg_rgb, front_color=fill_rgb)
         
+    module_drawer = SquareModuleDrawer()
+    if request.shape == "rounded":
+        module_drawer = RoundedModuleDrawer()
+    elif request.shape == "circle":
+        module_drawer = CircleModuleDrawer()
+    elif request.shape == "dots":
+        module_drawer = GappedSquareModuleDrawer()
+        
     img = qr.make_image(
         image_factory=StyledPilImage,
-        color_mask=color_mask
+        color_mask=color_mask,
+        module_drawer=module_drawer
     )
     
     img = img.convert("RGBA")
