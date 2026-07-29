@@ -95,18 +95,41 @@ function Dashboard() {
                   ) : (
                     <div className="dest-url">
                       <strong>Destination:</strong> {link.url}
+                      <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        {link.scan_limit && <span style={{ marginRight: '1rem' }}>🔒 Max Scans: {link.scan_limit}</span>}
+                        {link.expires_at && <span>⏳ Expires: {new Date(link.expires_at).toLocaleString()}</span>}
+                      </div>
                     </div>
                   )}
                 </div>
                 
-                <div className="scan-stats">
-                  <span className="count">{link.scans || 0}</span>
-                  <span className="label">Scans</span>
-                </div>
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                  <div className="scan-stats">
+                    <span className="count">{link.scans || 0}</span>
+                    <span className="label">Scans</span>
+                  </div>
+                  
+                  {(link.device_stats || link.country_stats) && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '0.3rem', minWidth: '150px' }}>
+                      <div>
+                        <strong>Devices: </strong>
+                        {Object.entries(link.device_stats || {}).map(([dev, count]) => (
+                          <span key={dev} style={{ marginRight: '0.5rem' }}>{dev === 'Mobile' ? '📱' : '💻'} {count}</span>
+                        ))}
+                      </div>
+                      <div>
+                        <strong>Top Regions: </strong>
+                        {Object.entries(link.country_stats || {}).slice(0,2).map(([country, count]) => (
+                          <span key={country} style={{ marginRight: '0.5rem' }}>🌍 {country} ({count})</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                {editingId !== link.short_id && (
-                  <button className="action-btn" onClick={() => handleEdit(link)}>Edit</button>
-                )}
+                  {editingId !== link.short_id && (
+                    <button className="action-btn" onClick={() => handleEdit(link)}>Edit</button>
+                  )}
+                </div>
               </div>
             ))}
           </div>

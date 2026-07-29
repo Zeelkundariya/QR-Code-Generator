@@ -257,8 +257,35 @@ def unlock_url(short_id: str, request: Request, background_tasks: BackgroundTask
 def get_links():
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
-    c.execute("SELECT short_id, url, scans FROM links")
-    results = [{"short_id": row[0], "url": row[1], "scans": row[2] if len(row)>2 else 0} for row in c.fetchall()]
+    c.execute("SELECT short_id, url, scans, scan_limit, expires_at FROM links")
+    db_links = c.fetchall()
+    
+    results = []
+    for row in db_links:
+        short_id = row[0]
+        url = row[1]
+        scans = row[2] if len(row)>2 else 0
+        scan_limit = row[3] if len(row)>3 else None
+        expires_at = row[4] if len(row)>4 else None
+        
+        c.execute("SELECT device_type, COUNT(*) FROM scans_log WHERE short_id = ? GROUP BY device_type", (short_id,))
+        device_data = c.fetchall()
+        device_stats = {d[0]: d[1] for d in device_data}
+        
+        c.execute("SELECT country, COUNT(*) FROM scans_log WHERE short_id = ? GROUP BY country ORDER BY COUNT(*) DESC LIMIT 3", (short_id,))
+        country_data = c.fetchall()
+        country_stats = {c_data[0]: c_data[1] for c_data in country_data}
+        
+        results.append({
+            "short_id": short_id, 
+            "url": url, 
+            "scans": scans,
+            "scan_limit": scan_limit,
+            "expires_at": expires_at,
+            "device_stats": device_stats,
+            "country_stats": country_stats
+        })
+        
     conn.close()
     return {"links": results}
 
