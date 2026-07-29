@@ -13,8 +13,20 @@ function App() {
   const [url, setUrl] = useState('')
   const [color, setColor] = useState("Black on White")
   const [useGradient, setUseGradient] = useState(false)
+  const [logoBase64, setLogoBase64] = useState('')
   const [qrImage, setQrImage] = useState(null)
   const [loading, setLoading] = useState(false)
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoBase64(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
 
   const handleGenerate = async () => {
     if (!url) return;
@@ -28,7 +40,8 @@ function App() {
           url,
           fill_color: selectedColor.fill,
           bg_color: selectedColor.bg,
-          use_gradient: useGradient
+          use_gradient: useGradient,
+          logo_base64: logoBase64 || null
         })
       });
       const data = await response.json();
@@ -65,7 +78,12 @@ function App() {
             <input type="checkbox" checked={useGradient} onChange={(e) => setUseGradient(e.target.checked)} />
             Use Radial Gradient
           </label>
-          <button onClick={handleGenerate} disabled={loading}>
+          <div style={{ width: '100%', maxWidth: '400px', textAlign: 'left' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Center Logo (Optional):</label>
+            <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ color: 'white' }} />
+            {logoBase64 && <div style={{marginTop: '0.5rem'}}><img src={logoBase64} alt="Logo preview" style={{maxHeight: '40px', borderRadius: '4px'}}/></div>}
+          </div>
+          <button onClick={handleGenerate} disabled={loading} style={{marginTop: '1rem'}}>
             {loading ? 'Generating...' : 'Generate QR Code'}
           </button>
           
