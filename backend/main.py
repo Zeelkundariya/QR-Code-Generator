@@ -7,6 +7,7 @@ from pydantic import BaseModel
 import qrcode
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.colormasks import RadialGradiantColorMask, SolidFillColorMask
+import qrcode.image.svg
 from PIL import Image
 import io
 import base64
@@ -54,6 +55,7 @@ class QRRequest(BaseModel):
     logo_base64: Optional[str] = None
     is_dynamic: bool = False
     password: Optional[str] = None
+    format: str = "png"
 
 @app.get("/")
 def read_root():
@@ -174,6 +176,14 @@ def generate_qr(request: QRRequest):
     qr.add_data(qr_url)
     qr.make(fit=True)
     
+    if request.format == "svg":
+        factory = qrcode.image.svg.SvgPathImage
+        img_svg = qr.make_image(image_factory=factory)
+        img_buffer = io.BytesIO()
+        img_svg.save(img_buffer)
+        encoded_img = base64.b64encode(img_buffer.getvalue()).decode('utf-8')
+        return {"image": f"data:image/svg+xml;base64,{encoded_img}"}
+        
     def hex_to_rgb(h):
         h = h.lstrip('#')
         return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
