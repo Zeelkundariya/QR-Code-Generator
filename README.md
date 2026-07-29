@@ -1,35 +1,46 @@
-# QR Code Generator Web Application
+# Premium QR Code Generator (SaaS-Ready)
 
-A modern, full-stack web application for generating highly customizable Static and Dynamic QR Codes.
+A modern, full-stack, enterprise-grade web application for generating highly customizable Static and Dynamic QR Codes. Built to scale with advanced analytics, custom shapes, bulk generation, and link management.
 
-## Architecture
+## 🏗️ Architecture
 
-- **Frontend**: Built with React (Vite) and styled with Vanilla CSS (Glassmorphism & Dark Mode).
-- **Backend**: Built with FastAPI (Python) for ultra-fast QR generation and short-link redirects.
-- **Database**: SQLite for storing dynamic QR code mapping.
+- **Frontend:** Built with React (Vite) and styled with custom Vanilla CSS featuring a premium Dark Mode & Glassmorphism aesthetic.
+- **Backend:** Built with FastAPI (Python) for ultra-fast QR generation, short-link redirects, and async GeoIP resolution.
+- **Database:** SQLite handles dynamic QR code mappings, analytics telemetry, and security constraints.
 
-## Features
+## ✨ Features
 
-- **Static QR Codes**: Standard URL encoding.
-- **Dynamic QR Codes**: Short-link redirects that can be updated (coming soon: dashboard to update links!).
-- **Center Logos**: Upload and embed custom logos into the center of the QR code.
-- **Custom Colors**: Choose from curated high-contrast color palettes.
-- **Radial Gradients**: Apply stunning radial gradients instead of flat fills.
+### QR Customization
+- **Multiple Formats:** Export to high-resolution PNG or vector SVG.
+- **Custom Shapes:** Choose from Classic Square, Rounded Edges, Circular Dots, or Gapped Dots.
+- **Color Themes:** 10 curated high-contrast professional color palettes.
+- **Stunning Gradients:** Apply beautiful radial gradients instead of flat fills.
+- **Branding:** Upload and embed custom center logos into your QR codes.
 
-## Getting Started
+### Dynamic Links & Analytics
+- **Dynamic QR Codes:** Generate short links that can be redirected or updated at any time from the Dashboard without changing the physical QR code.
+- **Advanced Dashboard Analytics:** Track total scans, device types (Mobile vs. Desktop), and top geographical regions (Country & City).
+- **Security & Limits:** Enforce password protection, set maximum scan limits, or schedule expiration dates for dynamic links.
+
+### Bulk Operations
+- **Bulk Generation:** Upload a `.csv` file with hundreds of URLs to generate a `.zip` archive containing all your QR codes in seconds.
+
+## 🚀 Getting Started
 
 ### Backend
+Navigate to the `backend` directory, install the Python dependencies, and start the FastAPI server:
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload
+python -m uvicorn main:app --reload
 ```
-Runs on `http://localhost:8000`.
+The backend API runs at `http://localhost:8000`.
 
 ### Frontend
+Navigate to the `frontend` directory, install the Node modules, and start the Vite development server:
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Runs on `http://localhost:5174`.
+The React frontend runs at `http://localhost:5174`.
