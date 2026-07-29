@@ -26,7 +26,11 @@ def init_db():
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS links
-                 (short_id TEXT PRIMARY KEY, url TEXT)''')
+                 (short_id TEXT PRIMARY KEY, url TEXT, scans INTEGER DEFAULT 0)''')
+    try:
+        c.execute("ALTER TABLE links ADD COLUMN scans INTEGER DEFAULT 0")
+    except sqlite3.OperationalError:
+        pass # Column might already exist
     conn.commit()
     conn.close()
 
