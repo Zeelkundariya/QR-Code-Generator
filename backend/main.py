@@ -60,6 +60,15 @@ def redirect_to_url(short_id: str):
         return RedirectResponse(url=result[0])
     raise HTTPException(status_code=404, detail="Link not found")
 
+@app.get("/api/links")
+def get_links():
+    conn = sqlite3.connect('qr.db')
+    c = conn.cursor()
+    c.execute("SELECT short_id, url FROM links")
+    results = [{"short_id": row[0], "url": row[1]} for row in c.fetchall()]
+    conn.close()
+    return {"links": results}
+
 @app.post("/api/generate")
 def generate_qr(request: QRRequest):
     if not request.url:
