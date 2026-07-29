@@ -1,5 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
+import urllib.parse
 from pydantic import BaseModel
 import qrcode
 from qrcode.image.styledpil import StyledPilImage
@@ -81,6 +84,9 @@ class UpdateLinkRequest(BaseModel):
 
 @app.put("/api/links/{short_id}")
 def update_link(short_id: str, request: UpdateLinkRequest):
+    parsed = urllib.parse.urlparse(request.url)
+    if not parsed.scheme or parsed.scheme not in ['http', 'https']:
+        raise HTTPException(status_code=400, detail="Invalid URL format. Must start with http:// or https://")
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
     c.execute("UPDATE links SET url = ? WHERE short_id = ?", (request.url, short_id))
@@ -93,6 +99,10 @@ def generate_qr(request: QRRequest):
     if not request.url:
         raise HTTPException(status_code=400, detail="URL is required")
         
+    parsed = urllib.parse.urlparse(request.url)
+    if not parsed.scheme or parsed.scheme not in ['http', 'https']:
+        raise HTTPException(status_code=400, detail="Invalid URL format. Must start with http:// or https://")
+
     qr_url = request.url
     
     if request.is_dynamic:
