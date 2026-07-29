@@ -12,6 +12,26 @@ const COLOR_PAIRS = {
 function App() {
   const [url, setUrl] = useState('')
   const [color, setColor] = useState("Black on White")
+  const [qrImage, setQrImage] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  const handleGenerate = async () => {
+    if (!url) return;
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const data = await response.json();
+      if (data.image) setQrImage(data.image);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="App">
@@ -52,7 +72,15 @@ function App() {
               <option key={name} value={name}>{name}</option>
             ))}
           </select>
-          <button>Generate QR Code</button>
+          <button onClick={handleGenerate} disabled={loading}>
+            {loading ? 'Generating...' : 'Generate QR Code'}
+          </button>
+          
+          {qrImage && (
+            <div style={{ marginTop: '2rem' }}>
+              <img src={qrImage} alt="QR Code" style={{ borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }} />
+            </div>
+          )}
         </div>
       </div>
     </div>
