@@ -69,6 +69,18 @@ def get_links():
     conn.close()
     return {"links": results}
 
+class UpdateLinkRequest(BaseModel):
+    url: str
+
+@app.put("/api/links/{short_id}")
+def update_link(short_id: str, request: UpdateLinkRequest):
+    conn = sqlite3.connect('qr.db')
+    c = conn.cursor()
+    c.execute("UPDATE links SET url = ? WHERE short_id = ?", (request.url, short_id))
+    conn.commit()
+    conn.close()
+    return {"message": "Link updated successfully"}
+
 @app.post("/api/generate")
 def generate_qr(request: QRRequest):
     if not request.url:
