@@ -13,6 +13,7 @@ function App() {
   const [url, setUrl] = useState('')
   const [color, setColor] = useState("Black on White")
   const [useGradient, setUseGradient] = useState(false)
+  const [isDynamic, setIsDynamic] = useState(false)
   const [logoBase64, setLogoBase64] = useState('')
   const [qrImage, setQrImage] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -41,7 +42,8 @@ function App() {
           fill_color: selectedColor.fill,
           bg_color: selectedColor.bg,
           use_gradient: useGradient,
-          logo_base64: logoBase64 || null
+          logo_base64: logoBase64 || null,
+          is_dynamic: isDynamic
         })
       });
       const data = await response.json();
@@ -58,6 +60,18 @@ function App() {
       <h1>QR Code Generator</h1>
       <div className="card">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+          
+          <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '400px' }}>
+            <button 
+              onClick={() => setIsDynamic(false)} 
+              style={{ flex: 1, backgroundColor: !isDynamic ? 'var(--primary)' : 'rgba(255,255,255,0.1)' }}
+            >Static QR</button>
+            <button 
+              onClick={() => setIsDynamic(true)}
+              style={{ flex: 1, backgroundColor: isDynamic ? 'var(--primary)' : 'rgba(255,255,255,0.1)' }}
+            >Dynamic QR</button>
+          </div>
+
           <input 
             type="text" 
             placeholder="Enter URL here..." 
@@ -83,7 +97,7 @@ function App() {
             <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ color: 'white' }} />
             {logoBase64 && <div style={{marginTop: '0.5rem'}}><img src={logoBase64} alt="Logo preview" style={{maxHeight: '40px', borderRadius: '4px'}}/></div>}
           </div>
-          <button onClick={handleGenerate} disabled={loading} style={{marginTop: '1rem'}}>
+          <button onClick={handleGenerate} disabled={loading} style={{marginTop: '1rem', width: '100%', maxWidth: '400px'}}>
             {loading ? 'Generating...' : 'Generate QR Code'}
           </button>
           
