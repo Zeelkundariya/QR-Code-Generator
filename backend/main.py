@@ -47,6 +47,19 @@ class QRRequest(BaseModel):
 def read_root():
     return {"message": "Welcome to the QR Code Generator API"}
 
+from fastapi.responses import RedirectResponse
+
+@app.get("/r/{short_id}")
+def redirect_to_url(short_id: str):
+    conn = sqlite3.connect('qr.db')
+    c = conn.cursor()
+    c.execute("SELECT url FROM links WHERE short_id = ?", (short_id,))
+    result = c.fetchone()
+    conn.close()
+    if result:
+        return RedirectResponse(url=result[0])
+    raise HTTPException(status_code=404, detail="Link not found")
+
 @app.post("/api/generate")
 def generate_qr(request: QRRequest):
     if not request.url:
