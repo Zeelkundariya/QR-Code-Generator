@@ -13,12 +13,13 @@ function App() {
   const [url, setUrl] = useState('')
   const [color, setColor] = useState("Black on White")
   const [useGradient, setUseGradient] = useState(false)
-
+  
   const [logoBase64, setLogoBase64] = useState('')
   const [qrImage, setQrImage] = useState(null)
   const [loading, setLoading] = useState(false)
   const [qrType, setQrType] = useState("static")
   const [password, setPassword] = useState("")
+  const [exportFormat, setExportFormat] = useState("png")
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
@@ -46,7 +47,8 @@ function App() {
           use_gradient: useGradient,
           logo_base64: logoBase64 || null,
           is_dynamic: qrType === "dynamic",
-          password: qrType === "dynamic" && password ? password : null
+          password: qrType === "dynamic" && password ? password : null,
+          format: exportFormat
         })
       });
       const data = await response.json();
@@ -82,15 +84,25 @@ function App() {
             onChange={(e) => setUrl(e.target.value)}
             style={{ padding: '0.8rem', width: '100%', maxWidth: '400px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
           />
-          <select 
-            value={color} 
-            onChange={(e) => setColor(e.target.value)}
-            style={{ padding: '0.8rem', width: '100%', maxWidth: '400px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-          >
-            {Object.keys(COLOR_PAIRS).map(name => (
-              <option key={name} value={name}>{name}</option>
-            ))}
-          </select>
+          <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '400px' }}>
+            <select 
+              value={color} 
+              onChange={(e) => setColor(e.target.value)}
+              style={{ padding: '0.8rem', flex: 2, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+            >
+              {Object.keys(COLOR_PAIRS).map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+            <select 
+              value={exportFormat} 
+              onChange={(e) => setExportFormat(e.target.value)}
+              style={{ padding: '0.8rem', flex: 1, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+            >
+              <option value="png">PNG</option>
+              <option value="svg">SVG</option>
+            </select>
+          </div>
           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
             <input type="checkbox" checked={useGradient} onChange={(e) => setUseGradient(e.target.checked)} />
             Use Radial Gradient
