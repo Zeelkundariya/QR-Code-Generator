@@ -66,6 +66,12 @@ h1 {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
+.input-control option {
+  background-color: #1e293b;
+  color: #f8fafc;
+  padding: 10px;
+}
+
 .tab-container {
   display: flex;
   gap: 1rem;
