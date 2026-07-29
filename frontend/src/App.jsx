@@ -27,6 +27,11 @@ function App() {
   const [password, setPassword] = useState("")
   const [exportFormat, setExportFormat] = useState("png")
   
+  const [shape, setShape] = useState("square")
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [scanLimit, setScanLimit] = useState("")
+  const [expiresAt, setExpiresAt] = useState("")
+  
   const [csvFile, setCsvFile] = useState(null)
   const [bulkLoading, setBulkLoading] = useState(false)
 
@@ -57,7 +62,10 @@ function App() {
           logo_base64: logoBase64 || null,
           is_dynamic: qrType === "dynamic",
           password: qrType === "dynamic" && password ? password : null,
-          format: exportFormat
+          format: exportFormat,
+          shape: shape,
+          scan_limit: qrType === "dynamic" && scanLimit ? parseInt(scanLimit) : null,
+          expires_at: qrType === "dynamic" && expiresAt ? new Date(expiresAt).toISOString() : null
         })
       });
       const data = await response.json();
@@ -174,21 +182,67 @@ function App() {
           </div>
           
           <div className="input-group">
+            <label>QR Dot Shape</label>
+            <select 
+              value={shape} 
+              className="input-control"
+              onChange={(e) => setShape(e.target.value)}
+            >
+              <option value="square">Classic Square</option>
+              <option value="rounded">Rounded</option>
+              <option value="circle">Circular</option>
+              <option value="dots">Dots</option>
+            </select>
+          </div>
+          
+          <div className="input-group">
             <label>Center Logo (Optional)</label>
             <input type="file" className="input-control" accept="image/*" onChange={handleLogoUpload} style={{ padding: '0.5rem' }} />
             {logoBase64 && <div style={{marginTop: '0.8rem', textAlign: 'center'}}><img src={logoBase64} alt="Logo preview" style={{maxHeight: '40px', borderRadius: '6px', background: 'white', padding: '4px'}}/></div>}
           </div>
 
           {qrType === "dynamic" && (
-            <div className="input-group">
-              <label>Password Protect Link (Optional)</label>
-              <input 
-                type="password" 
-                className="input-control"
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                placeholder="Leave empty for public link"
-              />
+            <div style={{ width: '100%', maxWidth: '500px', textAlign: 'left', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', cursor: 'pointer' }} onClick={() => setShowAdvanced(!showAdvanced)}>
+                <h4 style={{ margin: 0, color: 'var(--primary)', fontSize: '1.1rem' }}>Advanced Security & Limits</h4>
+                <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>{showAdvanced ? "▼" : "▶"}</span>
+              </div>
+              
+              {showAdvanced && (
+                <>
+                  <div className="input-group" style={{ maxWidth: '100%' }}>
+                    <label>Password Protect Link</label>
+                    <input 
+                      type="password" 
+                      className="input-control"
+                      value={password} 
+                      onChange={(e) => setPassword(e.target.value)} 
+                      placeholder="Leave empty for public link"
+                    />
+                  </div>
+                  
+                  <div className="input-group" style={{ maxWidth: '100%' }}>
+                    <label>Scan Limit (Optional)</label>
+                    <input 
+                      type="number" 
+                      className="input-control"
+                      value={scanLimit} 
+                      onChange={(e) => setScanLimit(e.target.value)} 
+                      placeholder="e.g. 100"
+                    />
+                  </div>
+                  
+                  <div className="input-group" style={{ maxWidth: '100%', marginBottom: 0 }}>
+                    <label>Expiration Date (Optional)</label>
+                    <input 
+                      type="datetime-local" 
+                      className="input-control"
+                      value={expiresAt} 
+                      onChange={(e) => setExpiresAt(e.target.value)} 
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
 
