@@ -13,10 +13,12 @@ function App() {
   const [url, setUrl] = useState('')
   const [color, setColor] = useState("Black on White")
   const [useGradient, setUseGradient] = useState(false)
-  const [isDynamic, setIsDynamic] = useState(false)
+
   const [logoBase64, setLogoBase64] = useState('')
   const [qrImage, setQrImage] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [qrType, setQrType] = useState("static")
+  const [password, setPassword] = useState("")
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
@@ -43,7 +45,8 @@ function App() {
           bg_color: selectedColor.bg,
           use_gradient: useGradient,
           logo_base64: logoBase64 || null,
-          is_dynamic: isDynamic
+          is_dynamic: qrType === "dynamic",
+          password: qrType === "dynamic" && password ? password : null
         })
       });
       const data = await response.json();
@@ -63,12 +66,12 @@ function App() {
           
           <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '400px' }}>
             <button 
-              onClick={() => setIsDynamic(false)} 
-              style={{ flex: 1, backgroundColor: !isDynamic ? 'var(--primary)' : 'rgba(255,255,255,0.1)' }}
+              onClick={() => setQrType("static")} 
+              style={{ flex: 1, backgroundColor: qrType === "static" ? 'var(--primary)' : 'rgba(255,255,255,0.1)' }}
             >Static QR</button>
             <button 
-              onClick={() => setIsDynamic(true)}
-              style={{ flex: 1, backgroundColor: isDynamic ? 'var(--primary)' : 'rgba(255,255,255,0.1)' }}
+              onClick={() => setQrType("dynamic")}
+              style={{ flex: 1, backgroundColor: qrType === "dynamic" ? 'var(--primary)' : 'rgba(255,255,255,0.1)' }}
             >Dynamic QR</button>
           </div>
 
@@ -97,6 +100,20 @@ function App() {
             <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ color: 'white' }} />
             {logoBase64 && <div style={{marginTop: '0.5rem'}}><img src={logoBase64} alt="Logo preview" style={{maxHeight: '40px', borderRadius: '4px'}}/></div>}
           </div>
+
+          {qrType === "dynamic" && (
+            <div style={{ width: '100%', maxWidth: '400px', textAlign: 'left' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Password Protect Link (Optional):</label>
+              <input 
+                type="password" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                placeholder="Leave empty for public link"
+                style={{ padding: '0.8rem', width: '100%', boxSizing: 'border-box', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
+              />
+            </div>
+          )}
+
           <button onClick={handleGenerate} disabled={loading} style={{marginTop: '1rem', width: '100%', maxWidth: '400px'}}>
             {loading ? 'Generating...' : 'Generate QR Code'}
           </button>
