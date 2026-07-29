@@ -1,65 +1,35 @@
-# QR Code Generator with Streamlit
+# QR Code Generator Web Application
 
-This is a simple QR Code Generator built using Python with the Streamlit library. It allows users to input a URL and customize the QR code colors using predefined color pairs. The generated QR code can be easily downloaded.
+A modern, full-stack web application for generating highly customizable Static and Dynamic QR Codes.
+
+## Architecture
+
+- **Frontend**: Built with React (Vite) and styled with Vanilla CSS (Glassmorphism & Dark Mode).
+- **Backend**: Built with FastAPI (Python) for ultra-fast QR generation and short-link redirects.
+- **Database**: SQLite for storing dynamic QR code mapping.
 
 ## Features
 
-- **User-friendly Interface:** Streamlit provides an intuitive user interface for entering the URL and selecting color pairs.
-- **Custom Color Pairs:** Users can choose from a variety of predefined color pairs for the QR code.
-- **Error Handling:** The application includes error handling to provide feedback in case of issues.
+- **Static QR Codes**: Standard URL encoding.
+- **Dynamic QR Codes**: Short-link redirects that can be updated (coming soon: dashboard to update links!).
+- **Center Logos**: Upload and embed custom logos into the center of the QR code.
+- **Custom Colors**: Choose from curated high-contrast color palettes.
+- **Radial Gradients**: Apply stunning radial gradients instead of flat fills.
 
-## Color Pairs
+## Getting Started
 
-The following color pairs are available for customizing the QR code:
-
-- Black on White
-- Purple on Gold
-- Teal on Coral
-- ...
-
-## How to Use
-
-1. Enter the URL: Input the desired URL for which you want to generate a QR code.
-2. Select Color Pair: Choose a color pair from the provided options.
-3. Generate QR Code: Click the "Generate QR Code" button to create the QR code.
-4. Download QR Code: Once generated, use the "Download QR Code" button to save the QR code image.
-
-## Dependencies
-
-- [qrcode](https://pypi.org/project/qrcode/)
-- [PIL (Pillow)](https://pypi.org/project/Pillow/)
-- [streamlit](https://pypi.org/project/streamlit/)
-
-## How to Run Locally
-
-1. Clone the repository:
-
+### Backend
 ```bash
-git clone https://github.com/yourusername/qr-code-generator.git
-cd qr-code-generator
-```
-
-2. Install dependencies:
-
-```bash
+cd backend
 pip install -r requirements.txt
+uvicorn main:app --reload
 ```
+Runs on `http://localhost:8000`.
 
-3. Run the Streamlit app:
-
+### Frontend
 ```bash
-streamlit run app.py
+cd frontend
+npm install
+npm run dev
 ```
-
-4. Open the provided URL in your web browser.
-
-## Contributions
-
-Contributions are welcome! If you have any ideas for improvement or encounter issues, feel free to open an [issue](https://github.com/yourusername/qr-code-generator/issues) or submit a [pull request](https://github.com/yourusername/qr-code-generator/pulls).
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-```
-
-Make sure to replace "yourusername" and "qr-code-generator" with your actual GitHub username and repository name. Also, ensure that you have a `requirements.txt` file with the necessary dependencies listed.
+Runs on `http://localhost:5173`.
