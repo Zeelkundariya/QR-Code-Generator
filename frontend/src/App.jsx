@@ -2,17 +2,22 @@ import { useState } from 'react'
 import './App.css'
 
 const COLOR_PAIRS = {
-  "Black on White": { fill: "#000000", bg: "#FFFFFF" },
-  "Purple on Gold": { fill: "#800080", bg: "#FFD700" },
-  "Teal on Coral": { fill: "#008080", bg: "#FF6B6B" },
-  "Orange on Navy": { fill: "#FFA500", bg: "#000080" },
-  "Magenta on Lime": { fill: "#FF00FF", bg: "#00FF00" }
+  "Classic (Black on White)": { fill: "#000000", bg: "#FFFFFF" },
+  "Midnight (Navy on White)": { fill: "#1e3a8a", bg: "#FFFFFF" },
+  "Ocean (Teal on Mint)": { fill: "#0f766e", bg: "#ccfbf1" },
+  "Forest (Green on Lime)": { fill: "#166534", bg: "#dcfce7" },
+  "Berry (Crimson on Rose)": { fill: "#9f1239", bg: "#ffe4e6" },
+  "Sunset (Orange on Peach)": { fill: "#c2410c", bg: "#ffedd5" },
+  "Royal (Purple on Lavender)": { fill: "#6b21a8", bg: "#f3e8ff" },
+  "Gold (Amber on Cream)": { fill: "#b45309", bg: "#fef3c7" },
+  "Cyberpunk (Cyan on Dark)": { fill: "#06b6d4", bg: "#0f172a" },
+  "Hacker (Neon Green on Black)": { fill: "#22c55e", bg: "#000000" }
 }
 
 function App() {
   const [mode, setMode] = useState("single")
   const [url, setUrl] = useState('')
-  const [color, setColor] = useState("Black on White")
+  const [color, setColor] = useState("Classic (Black on White)")
   const [useGradient, setUseGradient] = useState(false)
   
   const [logoBase64, setLogoBase64] = useState('')
