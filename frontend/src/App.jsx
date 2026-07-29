@@ -10,6 +10,7 @@ const COLOR_PAIRS = {
 }
 
 function App() {
+  const [mode, setMode] = useState("single")
   const [url, setUrl] = useState('')
   const [color, setColor] = useState("Black on White")
   const [useGradient, setUseGradient] = useState(false)
@@ -20,6 +21,9 @@ function App() {
   const [qrType, setQrType] = useState("static")
   const [password, setPassword] = useState("")
   const [exportFormat, setExportFormat] = useState("png")
+  
+  const [csvFile, setCsvFile] = useState(null)
+  const [bulkLoading, setBulkLoading] = useState(false)
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
@@ -60,11 +64,45 @@ function App() {
     }
   }
 
+  const handleBulkGenerate = async () => {
+    if (!csvFile) return;
+    setBulkLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', csvFile);
+      const res = await fetch('http://localhost:8000/api/bulk-generate', {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'bulk_qr_codes.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setBulkLoading(false);
+    }
+  }
+
   return (
     <div className="App">
       <h1>QR Code Generator</h1>
+      
+      <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2rem' }}>
+        <button onClick={() => setMode("single")} style={{ background: mode === "single" ? 'var(--primary)' : 'rgba(255,255,255,0.1)', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer', color: 'white' }}>Single QR</button>
+        <button onClick={() => setMode("bulk")} style={{ background: mode === "bulk" ? 'var(--primary)' : 'rgba(255,255,255,0.1)', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer', color: 'white' }}>Bulk Generate (CSV)</button>
+      </div>
+
       <div className="card">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+        {mode === "single" ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
           
           <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '400px' }}>
             <button 
@@ -136,6 +174,21 @@ function App() {
             </div>
           )}
         </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+            <h3 style={{ color: 'white' }}>Bulk Generate from CSV</h3>
+            <p style={{ color: 'var(--text-muted)' }}>Upload a CSV file containing a list of URLs (one URL per row in the first column) to generate hundreds of QR codes at once!</p>
+            <input 
+              type="file" 
+              accept=".csv" 
+              onChange={(e) => setCsvFile(e.target.files[0])} 
+              style={{ color: 'white', marginTop: '1rem' }} 
+            />
+            <button onClick={handleBulkGenerate} disabled={bulkLoading || !csvFile} style={{marginTop: '1rem', width: '100%', maxWidth: '400px'}}>
+              {bulkLoading ? 'Generating ZIP...' : 'Download ZIP Archive'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
