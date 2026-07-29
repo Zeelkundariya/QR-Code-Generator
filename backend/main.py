@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, Form
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from pydantic import BaseModel
 import urllib.parse
 from pydantic import BaseModel
@@ -15,6 +15,8 @@ import sqlite3
 import string
 import random
 from typing import Optional
+import csv
+import zipfile
 
 app = FastAPI(title="QR Code Generator API")
 
@@ -224,3 +226,40 @@ def generate_qr(request: QRRequest):
     
     encoded_img = base64.b64encode(img_bytes).decode('utf-8')
     return {"image": f"data:image/png;base64,{encoded_img}"}
+
+@app.post("/api/bulk-generate")
+async def bulk_generate(file: UploadFile = File(...)):
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Must be a CSV file")
+        
+    content = await file.read()
+    decoded = content.decode('utf-8')
+    csv_reader = csv.reader(io.StringIO(decoded))
+    
+    zip_buffer = io.BytesIO()
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for i, row in enumerate(csv_reader):
+            if not row or not row[0].strip():
+                continue
+            url = row[0].strip()
+            
+            parsed = urllib.parse.urlparse(url)
+            if not parsed.scheme or parsed.scheme not in ['http', 'https']:
+                continue # Skip invalid URLs in bulk
+                
+            qr = qrcode.QRCode(version=4, error_correction=qrcode.constants.ERROR_CORRECT_H, box_size=10, border=4)
+            qr.add_data(url)
+            qr.make(fit=True)
+            
+            img = qr.make_image(image_factory=StyledPilImage, color_mask=SolidFillColorMask(back_color=(255,255,255), front_color=(0,0,0)))
+            img_buffer = io.BytesIO()
+            img.save(img_buffer, format="PNG")
+            
+            zip_file.writestr(f"qr_code_{i+1}.png", img_buffer.getvalue())
+            
+    zip_buffer.seek(0)
+    return Response(
+        content=zip_buffer.getvalue(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename=bulk_qr_codes.zip"}
+    )
