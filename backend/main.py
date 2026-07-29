@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Form, File, UploadFile
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, HTMLResponse, Response
 from pydantic import BaseModel
@@ -17,6 +17,8 @@ import random
 from typing import Optional
 import csv
 import zipfile
+import json
+import urllib.request
 
 app = FastAPI(title="QR Code Generator API")
 
@@ -41,10 +43,55 @@ def init_db():
         c.execute("ALTER TABLE links ADD COLUMN password TEXT")
     except sqlite3.OperationalError:
         pass
+    try:
+        c.execute("ALTER TABLE links ADD COLUMN expires_at TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE links ADD COLUMN scan_limit INTEGER")
+    except sqlite3.OperationalError:
+        pass
+        
+    c.execute('''CREATE TABLE IF NOT EXISTS scans_log
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                  short_id TEXT, 
+                  ip_address TEXT, 
+                  user_agent TEXT, 
+                  country TEXT, 
+                  city TEXT, 
+                  device_type TEXT, 
+                  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+                  
     conn.commit()
     conn.close()
 
 init_db()
+
+def log_scan(short_id: str, ip_address: str, user_agent: str):
+    country, city, device = "Unknown", "Unknown", "Desktop"
+    
+    # Simple User-Agent parsing for device type
+    ua_lower = user_agent.lower()
+    if any(x in ua_lower for x in ["mobile", "android", "iphone", "ipad"]):
+        device = "Mobile"
+        
+    # Fetch Geo location from IP
+    try:
+        if ip_address and ip_address not in ["127.0.0.1", "localhost", "::1"]:
+            req = urllib.request.Request(f"http://ip-api.com/json/{ip_address}")
+            with urllib.request.urlopen(req, timeout=2) as response:
+                data = json.loads(response.read())
+                country = data.get("country", "Unknown")
+                city = data.get("city", "Unknown")
+    except Exception as e:
+        pass
+        
+    conn = sqlite3.connect('qr.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO scans_log (short_id, ip_address, user_agent, country, city, device_type) VALUES (?, ?, ?, ?, ?, ?)", 
+              (short_id, ip_address, user_agent, country, city, device))
+    conn.commit()
+    conn.close()
 
 def generate_short_id(length=6):
     return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
@@ -66,7 +113,7 @@ def read_root():
 from fastapi.responses import RedirectResponse
 
 @app.get("/r/{short_id}")
-def redirect_to_url(short_id: str):
+def redirect_to_url(short_id: str, request: Request, background_tasks: BackgroundTasks):
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
     c.execute("SELECT url, password FROM links WHERE short_id = ?", (short_id,))
@@ -102,6 +149,11 @@ def redirect_to_url(short_id: str):
         c.execute("UPDATE links SET scans = scans + 1 WHERE short_id = ?", (short_id,))
         conn.commit()
         conn.close()
+        
+        ip_address = request.client.host
+        user_agent = request.headers.get("user-agent", "")
+        background_tasks.add_task(log_scan, short_id, ip_address, user_agent)
+        
         return RedirectResponse(url=url)
     conn.close()
     return HTMLResponse(status_code=404, content="""
@@ -125,7 +177,7 @@ def redirect_to_url(short_id: str):
     """)
 
 @app.post("/r/{short_id}/unlock")
-def unlock_url(short_id: str, password: str = Form(...)):
+def unlock_url(short_id: str, request: Request, background_tasks: BackgroundTasks, password: str = Form(...)):
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
     c.execute("SELECT url, password FROM links WHERE short_id = ?", (short_id,))
@@ -136,6 +188,11 @@ def unlock_url(short_id: str, password: str = Form(...)):
             c.execute("UPDATE links SET scans = scans + 1 WHERE short_id = ?", (short_id,))
             conn.commit()
             conn.close()
+            
+            ip_address = request.client.host
+            user_agent = request.headers.get("user-agent", "")
+            background_tasks.add_task(log_scan, short_id, ip_address, user_agent)
+            
             return RedirectResponse(url=url, status_code=303)
         conn.close()
         return HTMLResponse(content="<h2>Incorrect password. <a href='/r/" + short_id + "'>Try again</a></h2>")
