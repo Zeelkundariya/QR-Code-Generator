@@ -59,9 +59,12 @@ def redirect_to_url(short_id: str):
     c = conn.cursor()
     c.execute("SELECT url FROM links WHERE short_id = ?", (short_id,))
     result = c.fetchone()
-    conn.close()
     if result:
+        c.execute("UPDATE links SET scans = scans + 1 WHERE short_id = ?", (short_id,))
+        conn.commit()
+        conn.close()
         return RedirectResponse(url=result[0])
+    conn.close()
     raise HTTPException(status_code=404, detail="Link not found")
 
 @app.get("/api/links")
