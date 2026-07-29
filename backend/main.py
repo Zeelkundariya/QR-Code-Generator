@@ -4,8 +4,10 @@ from pydantic import BaseModel
 import qrcode
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.colormasks import RadialGradiantColorMask, SolidFillColorMask
+from PIL import Image
 import io
 import base64
+from typing import Optional
 
 app = FastAPI(title="QR Code Generator API")
 
@@ -22,6 +24,7 @@ class QRRequest(BaseModel):
     fill_color: str = "#000000"
     bg_color: str = "#FFFFFF"
     use_gradient: bool = False
+    logo_base64: Optional[str] = None
 
 @app.get("/")
 def read_root():
@@ -33,7 +36,7 @@ def generate_qr(request: QRRequest):
         raise HTTPException(status_code=400, detail="URL is required")
         
     qr = qrcode.QRCode(
-        version=1,
+        version=4, # Higher version to allow room for logo
         error_correction=qrcode.constants.ERROR_CORRECT_H,
         box_size=10,
         border=4
@@ -41,7 +44,6 @@ def generate_qr(request: QRRequest):
     qr.add_data(request.url)
     qr.make(fit=True)
     
-    # Convert hex to RGB tuple for styledpil
     def hex_to_rgb(h):
         h = h.lstrip('#')
         return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
@@ -50,7 +52,6 @@ def generate_qr(request: QRRequest):
     fill_rgb = hex_to_rgb(request.fill_color)
 
     if request.use_gradient:
-        # Note: RadialGradiantColorMask takes back_color and center_color/edge_color
         color_mask = RadialGradiantColorMask(back_color=bg_rgb, center_color=fill_rgb, edge_color=(0,0,0))
     else:
         color_mask = SolidFillColorMask(back_color=bg_rgb, front_color=fill_rgb)
@@ -59,6 +60,27 @@ def generate_qr(request: QRRequest):
         image_factory=StyledPilImage,
         color_mask=color_mask
     )
+    
+    img = img.convert("RGBA")
+    
+    if request.logo_base64:
+        try:
+            logo_data = base64.b64decode(request.logo_base64.split(",")[1] if "," in request.logo_base64 else request.logo_base64)
+            logo = Image.open(io.BytesIO(logo_data)).convert("RGBA")
+            
+            # Calculate logo size (e.g., 20% of QR code width)
+            basewidth = int(float(img.size[0]) * 0.2)
+            wpercent = (basewidth / float(logo.size[0]))
+            hsize = int((float(logo.size[1]) * float(wpercent)))
+            logo = logo.resize((basewidth, hsize), Image.Resampling.LANCZOS)
+            
+            # Calculate position
+            pos = ((img.size[0] - logo.size[0]) // 2, (img.size[1] - logo.size[1]) // 2)
+            
+            # Paste logo
+            img.paste(logo, pos, mask=logo)
+        except Exception as e:
+            print(f"Failed to add logo: {e}")
     
     img_buffer = io.BytesIO()
     img.save(img_buffer, format="PNG")
