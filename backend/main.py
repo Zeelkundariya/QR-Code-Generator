@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from pydantic import BaseModel
 import urllib.parse
 from pydantic import BaseModel
@@ -29,11 +29,15 @@ def init_db():
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
     c.execute('''CREATE TABLE IF NOT EXISTS links
-                 (short_id TEXT PRIMARY KEY, url TEXT, scans INTEGER DEFAULT 0)''')
+                 (short_id TEXT PRIMARY KEY, url TEXT, scans INTEGER DEFAULT 0, password TEXT)''')
     try:
         c.execute("ALTER TABLE links ADD COLUMN scans INTEGER DEFAULT 0")
     except sqlite3.OperationalError:
-        pass # Column might already exist
+        pass
+    try:
+        c.execute("ALTER TABLE links ADD COLUMN password TEXT")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
@@ -49,6 +53,7 @@ class QRRequest(BaseModel):
     use_gradient: bool = False
     logo_base64: Optional[str] = None
     is_dynamic: bool = False
+    password: Optional[str] = None
 
 @app.get("/")
 def read_root():
@@ -60,13 +65,58 @@ from fastapi.responses import RedirectResponse
 def redirect_to_url(short_id: str):
     conn = sqlite3.connect('qr.db')
     c = conn.cursor()
-    c.execute("SELECT url FROM links WHERE short_id = ?", (short_id,))
+    c.execute("SELECT url, password FROM links WHERE short_id = ?", (short_id,))
     result = c.fetchone()
     if result:
+        url, password = result
+        if password:
+            conn.close()
+            return HTMLResponse(content=f"""
+                <html>
+                    <head>
+                        <title>Protected Link</title>
+                        <style>
+                            body {{ font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #1a1a1a; color: white; }}
+                            .card {{ background: #2a2a2a; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); text-align: center; }}
+                            input {{ padding: 0.5rem; margin-top: 1rem; border-radius: 4px; border: none; width: 100%; box-sizing: border-box; }}
+                            button {{ background: #007bff; color: white; border: none; padding: 0.5rem 1rem; margin-top: 1rem; border-radius: 4px; cursor: pointer; width: 100%; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class="card">
+                            <h2>Password Protected</h2>
+                            <p>This QR code link is protected.</p>
+                            <form action="/r/{short_id}/unlock" method="POST">
+                                <input type="password" name="password" placeholder="Enter password" required />
+                                <button type="submit">Unlock</button>
+                            </form>
+                        </div>
+                    </body>
+                </html>
+            """)
+        
         c.execute("UPDATE links SET scans = scans + 1 WHERE short_id = ?", (short_id,))
         conn.commit()
         conn.close()
-        return RedirectResponse(url=result[0])
+        return RedirectResponse(url=url)
+    conn.close()
+    raise HTTPException(status_code=404, detail="Link not found")
+
+@app.post("/r/{short_id}/unlock")
+def unlock_url(short_id: str, password: str = Form(...)):
+    conn = sqlite3.connect('qr.db')
+    c = conn.cursor()
+    c.execute("SELECT url, password FROM links WHERE short_id = ?", (short_id,))
+    result = c.fetchone()
+    if result:
+        url, saved_password = result
+        if password == saved_password:
+            c.execute("UPDATE links SET scans = scans + 1 WHERE short_id = ?", (short_id,))
+            conn.commit()
+            conn.close()
+            return RedirectResponse(url=url, status_code=303)
+        conn.close()
+        return HTMLResponse(content="<h2>Incorrect password. <a href='/r/" + short_id + "'>Try again</a></h2>")
     conn.close()
     raise HTTPException(status_code=404, detail="Link not found")
 
@@ -109,7 +159,7 @@ def generate_qr(request: QRRequest):
         short_id = generate_short_id()
         conn = sqlite3.connect('qr.db')
         c = conn.cursor()
-        c.execute("INSERT INTO links (short_id, url) VALUES (?, ?)", (short_id, request.url))
+        c.execute("INSERT INTO links (short_id, url, password) VALUES (?, ?, ?)", (short_id, request.url, request.password))
         conn.commit()
         conn.close()
         # Assume the backend is hosted here
