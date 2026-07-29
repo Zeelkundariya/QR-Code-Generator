@@ -6,6 +6,7 @@ function Dashboard() {
   const [links, setLinks] = useState([])
   const [editingId, setEditingId] = useState(null)
   const [editUrl, setEditUrl] = useState("")
+  const [feedback, setFeedback] = useState("")
 
   const fetchLinks = async () => {
     try {
@@ -28,66 +29,90 @@ function Dashboard() {
 
   const handleSave = async (short_id) => {
     try {
-      await fetch(`http://localhost:8000/api/links/${short_id}`, {
+      const res = await fetch(`http://localhost:8000/api/links/${short_id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: editUrl })
       })
+      if (!res.ok) {
+        const errorData = await res.json()
+        showFeedback(`Error: ${errorData.detail || 'Invalid URL'}`)
+        return
+      }
       setEditingId(null)
       fetchLinks()
+      showFeedback("Link updated successfully!")
     } catch (e) {
       console.error(e)
     }
   }
 
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
+    showFeedback("Link copied to clipboard!")
+  }
+
+  const showFeedback = (msg) => {
+    setFeedback(msg)
+    setTimeout(() => setFeedback(""), 3000)
+  }
+
   return (
     <div className="dashboard-container">
-      <h2>Dynamic Links Dashboard</h2>
+      <h1>Dashboard</h1>
+      <p className="subtitle">Manage your dynamic links and track performance.</p>
+
+      {feedback && (
+        <div style={{ background: 'var(--primary)', color: 'white', padding: '0.8rem', borderRadius: '8px', marginBottom: '1rem', transition: 'all 0.3s' }}>
+          {feedback}
+        </div>
+      )}
+
       <div className="dashboard-card">
         {links.length === 0 ? (
-          <p>No links created yet. Your dynamic links will appear here.</p>
+          <p style={{ color: 'var(--text-muted)' }}>No links created yet. Your dynamic links will appear here.</p>
         ) : (
           <div className="links-list">
             {links.map(link => (
-              <div key={link.short_id} className="link-item" style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                <div style={{ flex: 1, textAlign: 'left' }}>
-                  <strong>ID:</strong> {link.short_id} <br/>
-                  <a href={`http://localhost:8000/r/${link.short_id}`} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)' }}>
-                    http://localhost:8000/r/{link.short_id}
+              <div key={link.short_id} className="link-item">
+                <div className="link-info">
+                  <a href={`http://localhost:8000/r/${link.short_id}`} target="_blank" rel="noreferrer" className="short-url">
+                    http://localhost:8000/r/{link.short_id} 
+                    <span onClick={(e) => { e.preventDefault(); copyToClipboard(`http://localhost:8000/r/${link.short_id}`); }} style={{ cursor: 'pointer', fontSize: '1rem' }} title="Copy Link">📋</span>
                   </a>
+                  
+                  {editingId === link.short_id ? (
+                    <div className="edit-mode" style={{ marginTop: '1rem' }}>
+                      <input 
+                        type="text" 
+                        value={editUrl} 
+                        onChange={(e) => setEditUrl(e.target.value)} 
+                        className="edit-input"
+                      />
+                      <button className="action-btn primary" onClick={() => handleSave(link.short_id)}>Save</button>
+                      <button className="action-btn" onClick={() => setEditingId(null)}>Cancel</button>
+                    </div>
+                  ) : (
+                    <div className="dest-url">
+                      <strong>Destination:</strong> {link.url}
+                    </div>
+                  )}
                 </div>
                 
-                {editingId === link.short_id ? (
-                  <div style={{ flex: 2, display: 'flex', gap: '0.5rem' }}>
-                    <input 
-                      type="text" 
-                      value={editUrl} 
-                      onChange={(e) => setEditUrl(e.target.value)} 
-                      style={{ flex: 1, padding: '0.5rem', borderRadius: '4px', border: 'none' }}
-                    />
-                    <button onClick={() => handleSave(link.short_id)} style={{ padding: '0.5rem 1rem' }}>Save</button>
-                    <button onClick={() => setEditingId(null)} style={{ padding: '0.5rem 1rem', background: '#555' }}>Cancel</button>
-                  </div>
-                ) : (
-                  <div style={{ flex: 2, textAlign: 'left', wordBreak: 'break-all' }}>
-                    <strong>Dest:</strong> {link.url}
-                  </div>
-                )}
-                
-                <div style={{ flex: 1, textAlign: 'center', background: 'rgba(255,255,255,0.1)', padding: '0.5rem', borderRadius: '4px' }}>
-                  <strong>Scans:</strong><br/>
-                  <span style={{ fontSize: '1.2rem', color: 'var(--primary)' }}>{link.scans || 0}</span>
+                <div className="scan-stats">
+                  <span className="count">{link.scans || 0}</span>
+                  <span className="label">Scans</span>
                 </div>
 
                 {editingId !== link.short_id && (
-                  <button onClick={() => handleEdit(link)} style={{ padding: '0.5rem 1rem' }}>Edit</button>
+                  <button className="action-btn" onClick={() => handleEdit(link)}>Edit</button>
                 )}
               </div>
             ))}
           </div>
         )}
       </div>
-      <Link to="/" style={{ color: 'var(--primary)', marginTop: '2rem', display: 'inline-block' }}>
+      <Link to="/" style={{ color: 'var(--text-muted)', marginTop: '2rem', display: 'inline-block', textDecoration: 'none' }}>
         &larr; Back to Generator
       </Link>
     </div>

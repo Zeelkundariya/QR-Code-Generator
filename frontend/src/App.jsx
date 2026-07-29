@@ -94,98 +94,126 @@ function App() {
   return (
     <div className="App">
       <h1>QR Code Generator</h1>
+      <p className="subtitle">The only QR tool you'll ever need. Fast, customizable, and reliable.</p>
       
-      <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginBottom: '2rem' }}>
-        <button onClick={() => setMode("single")} style={{ background: mode === "single" ? 'var(--primary)' : 'rgba(255,255,255,0.1)', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer', color: 'white' }}>Single QR</button>
-        <button onClick={() => setMode("bulk")} style={{ background: mode === "bulk" ? 'var(--primary)' : 'rgba(255,255,255,0.1)', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer', color: 'white' }}>Bulk Generate (CSV)</button>
+      <div className="tab-container">
+        <button 
+          className={`tab-btn ${mode === "single" ? "active" : ""}`} 
+          onClick={() => setMode("single")}
+        >Single QR</button>
+        <button 
+          className={`tab-btn ${mode === "bulk" ? "active" : ""}`} 
+          onClick={() => setMode("bulk")}
+        >Bulk Generate (CSV)</button>
       </div>
 
       <div className="card">
         {mode === "single" ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           
-          <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '400px' }}>
+          <div className="tab-container" style={{ width: '100%', maxWidth: '500px', marginBottom: '1.5rem' }}>
             <button 
+              className={`tab-btn ${qrType === "static" ? "active" : ""}`}
+              style={{ flex: 1 }}
               onClick={() => setQrType("static")} 
-              style={{ flex: 1, backgroundColor: qrType === "static" ? 'var(--primary)' : 'rgba(255,255,255,0.1)' }}
             >Static QR</button>
             <button 
+              className={`tab-btn ${qrType === "dynamic" ? "active" : ""}`}
+              style={{ flex: 1 }}
               onClick={() => setQrType("dynamic")}
-              style={{ flex: 1, backgroundColor: qrType === "dynamic" ? 'var(--primary)' : 'rgba(255,255,255,0.1)' }}
             >Dynamic QR</button>
           </div>
 
-          <input 
-            type="text" 
-            placeholder="Enter URL here..." 
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            style={{ padding: '0.8rem', width: '100%', maxWidth: '400px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-          />
-          <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '400px' }}>
-            <select 
-              value={color} 
-              onChange={(e) => setColor(e.target.value)}
-              style={{ padding: '0.8rem', flex: 2, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-            >
-              {Object.keys(COLOR_PAIRS).map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
-            <select 
-              value={exportFormat} 
-              onChange={(e) => setExportFormat(e.target.value)}
-              style={{ padding: '0.8rem', flex: 1, borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
-            >
-              <option value="png">PNG</option>
-              <option value="svg">SVG</option>
-            </select>
+          <div className="input-group">
+            <label>Destination URL</label>
+            <input 
+              type="text" 
+              className="input-control"
+              placeholder="https://example.com" 
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+            />
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-            <input type="checkbox" checked={useGradient} onChange={(e) => setUseGradient(e.target.checked)} />
-            Use Radial Gradient
-          </label>
-          <div style={{ width: '100%', maxWidth: '400px', textAlign: 'left' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Center Logo (Optional):</label>
-            <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ color: 'white' }} />
-            {logoBase64 && <div style={{marginTop: '0.5rem'}}><img src={logoBase64} alt="Logo preview" style={{maxHeight: '40px', borderRadius: '4px'}}/></div>}
+          
+          <div className="input-group" style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ flex: 2 }}>
+              <label>Color Theme</label>
+              <select 
+                value={color} 
+                className="input-control"
+                onChange={(e) => setColor(e.target.value)}
+              >
+                {Object.keys(COLOR_PAIRS).map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label>Export Format</label>
+              <select 
+                value={exportFormat} 
+                className="input-control"
+                onChange={(e) => setExportFormat(e.target.value)}
+              >
+                <option value="png">PNG</option>
+                <option value="svg">SVG</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="input-group">
+            <label className="checkbox-label">
+              <input type="checkbox" checked={useGradient} onChange={(e) => setUseGradient(e.target.checked)} />
+              Use Radial Gradient for modern look
+            </label>
+          </div>
+          
+          <div className="input-group">
+            <label>Center Logo (Optional)</label>
+            <input type="file" className="input-control" accept="image/*" onChange={handleLogoUpload} style={{ padding: '0.5rem' }} />
+            {logoBase64 && <div style={{marginTop: '0.8rem', textAlign: 'center'}}><img src={logoBase64} alt="Logo preview" style={{maxHeight: '40px', borderRadius: '6px', background: 'white', padding: '4px'}}/></div>}
           </div>
 
           {qrType === "dynamic" && (
-            <div style={{ width: '100%', maxWidth: '400px', textAlign: 'left' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Password Protect Link (Optional):</label>
+            <div className="input-group">
+              <label>Password Protect Link (Optional)</label>
               <input 
                 type="password" 
+                className="input-control"
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 placeholder="Leave empty for public link"
-                style={{ padding: '0.8rem', width: '100%', boxSizing: 'border-box', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
               />
             </div>
           )}
 
-          <button onClick={handleGenerate} disabled={loading} style={{marginTop: '1rem', width: '100%', maxWidth: '400px'}}>
+          <button className="btn-primary" onClick={handleGenerate} disabled={loading}>
             {loading ? 'Generating...' : 'Generate QR Code'}
           </button>
           
           {qrImage && (
-            <div style={{ marginTop: '2rem' }}>
-              <img src={qrImage} alt="QR Code" style={{ borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }} />
+            <div className="qr-preview-container">
+              <img src={qrImage} alt="QR Code" className="qr-image" />
             </div>
           )}
         </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-            <h3 style={{ color: 'white' }}>Bulk Generate from CSV</h3>
-            <p style={{ color: 'var(--text-muted)' }}>Upload a CSV file containing a list of URLs (one URL per row in the first column) to generate hundreds of QR codes at once!</p>
-            <input 
-              type="file" 
-              accept=".csv" 
-              onChange={(e) => setCsvFile(e.target.files[0])} 
-              style={{ color: 'white', marginTop: '1rem' }} 
-            />
-            <button onClick={handleBulkGenerate} disabled={bulkLoading || !csvFile} style={{marginTop: '1rem', width: '100%', maxWidth: '400px'}}>
-              {bulkLoading ? 'Generating ZIP...' : 'Download ZIP Archive'}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <h3 style={{ color: 'white', fontSize: '1.5rem', marginBottom: '0.5rem' }}>Bulk Generate from CSV</h3>
+            <p className="subtitle" style={{ maxWidth: '400px' }}>Upload a CSV file containing a list of URLs (one URL per row in the first column) to generate hundreds of QR codes at once!</p>
+            
+            <div className="input-group" style={{ textAlign: 'center' }}>
+              <input 
+                type="file" 
+                className="input-control"
+                accept=".csv" 
+                onChange={(e) => setCsvFile(e.target.files[0])} 
+                style={{ padding: '1rem', marginTop: '1rem' }} 
+              />
+            </div>
+            
+            <button className="btn-primary" onClick={handleBulkGenerate} disabled={bulkLoading || !csvFile}>
+              {bulkLoading ? 'Generating ZIP Archive...' : 'Download ZIP Archive'}
             </button>
           </div>
         )}

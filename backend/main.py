@@ -104,7 +104,25 @@ def redirect_to_url(short_id: str):
         conn.close()
         return RedirectResponse(url=url)
     conn.close()
-    raise HTTPException(status_code=404, detail="Link not found")
+    return HTMLResponse(status_code=404, content="""
+        <html>
+            <head>
+                <title>Link Not Found</title>
+                <style>
+                    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #0f172a; color: white; margin: 0; }
+                    .card { background: rgba(30, 41, 59, 0.7); padding: 3rem; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+                    h1 { color: #ef4444; margin-top: 0; }
+                    p { color: #94a3b8; }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <h1>404</h1>
+                    <p>Oops! The link you are looking for does not exist or has been removed.</p>
+                </div>
+            </body>
+        </html>
+    """)
 
 @app.post("/r/{short_id}/unlock")
 def unlock_url(short_id: str, password: str = Form(...)):
@@ -122,7 +140,26 @@ def unlock_url(short_id: str, password: str = Form(...)):
         conn.close()
         return HTMLResponse(content="<h2>Incorrect password. <a href='/r/" + short_id + "'>Try again</a></h2>")
     conn.close()
-    raise HTTPException(status_code=404, detail="Link not found")
+    conn.close()
+    return HTMLResponse(status_code=404, content="""
+        <html>
+            <head>
+                <title>Link Not Found</title>
+                <style>
+                    body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #0f172a; color: white; margin: 0; }
+                    .card { background: rgba(30, 41, 59, 0.7); padding: 3rem; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+                    h1 { color: #ef4444; margin-top: 0; }
+                    p { color: #94a3b8; }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <h1>404</h1>
+                    <p>Oops! The link you are looking for does not exist or has been removed.</p>
+                </div>
+            </body>
+        </html>
+    """)
 
 @app.get("/api/links")
 def get_links():
